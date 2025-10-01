@@ -11,14 +11,39 @@ app.use(express.json());
 const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.com/v1';
 const NIM_API_KEY = process.env.NIM_API_KEY;
 
+// Model mapping - Use these names in Janitor AI!
 const MODEL_MAPPING = {
-  'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',
-  'gpt-4': 'meta/llama-3.1-70b-instruct',
-  'gpt-4-turbo': 'meta/llama-3.1-405b-instruct'
+  // Best for Roleplay (Recommended!)
+  'gpt-4-turbo': 'meta/llama-3.1-405b-instruct',          // Best quality, slower
+  'gpt-4': 'meta/llama-3.1-70b-instruct',                 // Great balance
+  'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',          // Fast, good quality
+  
+  // DeepSeek - Great for creative writing!
+  'deepseek-chat': 'deepseek-ai/deepseek-r1',
+  
+  // Llama Models - Excellent for RP
+  'llama-405b': 'meta/llama-3.1-405b-instruct',           // Highest quality
+  'llama-70b': 'meta/llama-3.3-70b-instruct',             // Very good
+  'llama-vision': 'meta/llama-3.2-90b-vision-instruct',   // Can see images!
+  
+  // Mistral - Creative and fun
+  'mistral-large': 'mistralai/mistral-large-2-instruct',
+  'mistral-small': 'mistralai/mistral-small-2-instruct',
+  
+  // Qwen - Smart and creative
+  'qwen-72b': 'qwen/qwen2.5-72b-instruct',
+  'qwen-coder': 'qwen/qwq-32b-preview',
+  
+  // Nemotron - NVIDIA's own (great for RP!)
+  'nemotron-70b': 'nvidia/llama-3.1-nemotron-70b-instruct',
+  
+  // Google Gemma - Good alternative
+  'gemma-27b': 'google/gemma-2-27b-it',
+  'gemma-9b': 'google/gemma-2-9b-it'
 };
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', service: 'OpenAI to NVIDIA NIM Proxy' });
+  res.json({ status: 'ok', service: 'OpenAI to NVIDIA NIM Proxy for Janitor AI' });
 });
 
 app.get('/v1/models', (req, res) => {
@@ -40,13 +65,14 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
   try {
     const { model, messages, temperature, max_tokens, stream } = req.body;
     
+    // Use the mapped model or default to fast model
     const nimModel = MODEL_MAPPING[model] || MODEL_MAPPING['gpt-3.5-turbo'];
     
     const nimRequest = {
       model: nimModel,
       messages: messages,
       temperature: temperature || 0.7,
-      max_tokens: max_tokens || 1024,
+      max_tokens: max_tokens || 2048,  // Higher for longer RP responses
       stream: stream || false
     };
     
@@ -98,7 +124,7 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
   }
 });
 
-// 404 handler - ONLY ONE, at the end
+// 404 handler
 app.all('*', (req, res) => {
   console.log(`404 - ${req.method} ${req.path}`);
   res.status(404).json({
@@ -112,8 +138,7 @@ app.all('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 OpenAI to NVIDIA NIM Proxy running on port ${PORT}`);
-  console.log(`📍 Health check: http://localhost:${PORT}/health`);
-  console.log(`📍 Models: http://localhost:${PORT}/v1/models`);
-  console.log(`📍 Chat: http://localhost:${PORT}/v1/chat/completions`);
+  console.log(`🚀 Janitor AI Proxy running on port ${PORT}`);
+  console.log(`📍 Use this URL in Janitor AI: http://localhost:${PORT}/v1`);
+  console.log(`📍 Best models for RP: gpt-4-turbo, llama-405b, nemotron-70b`);
 });
