@@ -35,7 +35,8 @@ app.get('/v1/models', (req, res) => {
   });
 });
 
-app.post('/v1/chat/completions', async (req, res) => {
+// Handle both /chat/completions and /v1/chat/completions
+app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
   try {
     const { model, messages, temperature, max_tokens, stream } = req.body;
     
@@ -54,11 +55,12 @@ app.post('/v1/chat/completions', async (req, res) => {
         'Authorization': `Bearer ${NIM_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      responseType: stream ? 'stream' : 'json'
+      responseType: stream ? 'stream' : 'json',
+      timeout: 120000 // 2 minute timeout
     });
     
     if (stream) {
-      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
       response.data.pipe(res);
@@ -84,18 +86,19 @@ app.post('/v1/chat/completions', async (req, res) => {
     }
     
   } catch (error) {
-    console.error('Proxy error:', error.message);
+    console.error('Proxy error:', error.response?.data || error.message);
     
     res.status(error.response?.status || 500).json({
       error: {
-        message: error.message || 'Internal server error',
+        message: error.response?.data?.message || error.message || 'Internal server error',
         type: 'invalid_request_error',
         code: error.response?.status || 500
       }
     });
   }
 });
-// Replace the existing app.all('*', ...) with this:
+
+// 404 handler - ONLY ONE, at the end
 app.all('*', (req, res) => {
   console.log(`404 - ${req.method} ${req.path}`);
   res.status(404).json({
@@ -107,17 +110,10 @@ app.all('*', (req, res) => {
     }
   });
 });
-app.all('*', (req, res) => {
-  res.status(404).json({
-    error: {
-      message: `Endpoint ${req.path} not found`,
-      type: 'invalid_request_error',
-      code: 404
-    }
-  });
-});
 
 app.listen(PORT, () => {
-  console.log(`OpenAI to NVIDIA NIM Proxy running on port ${PORT}`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`🚀 OpenAI to NVIDIA NIM Proxy running on port ${PORT}`);
+  console.log(`📍 Health check: http://localhost:${PORT}/health`);
+  console.log(`📍 Models: http://localhost:${PORT}/v1/models`);
+  console.log(`📍 Chat: http://localhost:${PORT}/v1/chat/completions`);
 });
