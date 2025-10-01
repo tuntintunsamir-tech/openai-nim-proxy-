@@ -95,12 +95,19 @@ app.post('/v1/chat/completions', async (req, res) => {
     });
   }
 });
-
-app.all('*', // Debug route to see what endpoint is being called
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path}`);
-  next();
-});(req, res) => {
+// Replace the existing app.all('*', ...) with this:
+app.all('*', (req, res) => {
+  console.log(`404 - ${req.method} ${req.path}`);
+  res.status(404).json({
+    error: {
+      message: `Endpoint ${req.path} not found. Available endpoints: /health, /v1/models, /v1/chat/completions`,
+      type: 'invalid_request_error',
+      code: 404,
+      available_endpoints: ['/health', '/v1/models', '/v1/chat/completions']
+    }
+  });
+});
+app.all('*', (req, res) => {
   res.status(404).json({
     error: {
       message: `Endpoint ${req.path} not found`,
