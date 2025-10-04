@@ -12,34 +12,42 @@ const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.c
 const NIM_API_KEY = process.env.NIM_API_KEY;
 
 // Model mapping - Use these names in Janitor AI!
+// Updated October 2025 - Verified working models
 const MODEL_MAPPING = {
-  // Best for Roleplay (Recommended!)
-  'gpt-4-turbo': 'meta/llama-3.1-405b-instruct',          // Best quality, slower
-  'gpt-4': 'meta/llama-3.1-70b-instruct',                 // Great balance
-  'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',          // Fast, good quality
+  // Best for Roleplay (Recommended!) - Most reliable
+  'gpt-4-turbo': 'meta/llama-3.1-405b-instruct',
+  'gpt-4': 'meta/llama-3.1-70b-instruct',
+  'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',
   
-  // DeepSeek - Great for creative writing!
-  'deepseek-chat': 'deepseek-ai/deepseek-r1',
+  // DeepSeek - NEW! Amazing reasoning and creativity! 🔥
+  'deepseek-r1': 'deepseek-ai/deepseek-r1',              // 671B params - SUPER smart!
+  'deepseek-chat': 'deepseek-ai/deepseek-r1',            // Same as above
+  'deepseek': 'deepseek-ai/deepseek-r1',                 // Alias
   
-  // Llama Models - Excellent for RP
-  'llama-405b': 'meta/llama-3.1-405b-instruct',           // Highest quality
-  'llama-70b': 'meta/llama-3.3-70b-instruct',             // Very good
-  'llama-vision': 'meta/llama-3.2-90b-vision-instruct',   // Can see images!
+  // Llama 3.3 - Latest and best for RP!
+  'llama-3.3-70b': 'meta/llama-3.3-70b-instruct',
+  'llama-405b': 'meta/llama-3.1-405b-instruct',
+  'llama-70b': 'meta/llama-3.1-70b-instruct',
   
-  // Mistral - Creative and fun
+  // Mistral - Very creative
   'mistral-large': 'mistralai/mistral-large-2-instruct',
-  'mistral-small': 'mistralai/mistral-small-2-instruct',
+  'mistral-small': 'mistralai/mistral-7b-instruct',
   
-  // Qwen - Smart and creative
+  // Qwen - Excellent reasoning
   'qwen-72b': 'qwen/qwen2.5-72b-instruct',
-  'qwen-coder': 'qwen/qwq-32b-preview',
+  'qwen-32b': 'qwen/qwq-32b-preview',
   
-  // Nemotron - NVIDIA's own (great for RP!)
+  // NVIDIA Nemotron - Great for chat
   'nemotron-70b': 'nvidia/llama-3.1-nemotron-70b-instruct',
+  'nemotron-51b': 'nvidia/llama-3.1-nemotron-51b-instruct',
   
-  // Google Gemma - Good alternative
+  // Google Gemma
   'gemma-27b': 'google/gemma-2-27b-it',
-  'gemma-9b': 'google/gemma-2-9b-it'
+  'gemma-9b': 'google/gemma-2-9b-it',
+  
+  // Alternative safe options
+  'claude': 'meta/llama-3.1-70b-instruct',  // Fallback
+  'default': 'meta/llama-3.1-8b-instruct'    // Safe default
 };
 
 app.get('/health', (req, res) => {
