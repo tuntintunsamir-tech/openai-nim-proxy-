@@ -14,40 +14,40 @@ const NIM_API_KEY = process.env.NIM_API_KEY;
 // Model mapping - Use these names in Janitor AI!
 // Updated October 2025 - Verified working models
 const MODEL_MAPPING = {
-  // Best for Roleplay (Recommended!) - Most reliable
+  // 🔥 BEST FOR NSFW RP (Least Filtered) 🔥
+  'llama-405b': 'meta/llama-3.1-405b-instruct',          // ⭐ Best quality + Very permissive
+  'llama-70b': 'meta/llama-3.1-70b-instruct',            // ⭐ Fast + Very permissive
+  'llama-3.3-70b': 'meta/llama-3.3-70b-instruct',        // ⭐ Latest + Very permissive
+  
+  // Standard aliases
   'gpt-4-turbo': 'meta/llama-3.1-405b-instruct',
   'gpt-4': 'meta/llama-3.1-70b-instruct',
   'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',
   
-  // DeepSeek - NEW! Amazing reasoning and creativity! 🔥
-  'deepseek-r1': 'deepseek-ai/deepseek-r1',              // 671B params - SUPER smart!
-  'deepseek-chat': 'deepseek-ai/deepseek-r1',            // Same as above
-  'deepseek': 'deepseek-ai/deepseek-r1',                 // Alias
+  // 🎭 Creative & Permissive
+  'mistral-large': 'mistralai/mistral-large-2-instruct', // Very creative, relaxed filters
+  'mistral-small': 'mistralai/mistral-7b-instruct',      // Fast, relaxed filters
   
-  // Llama 3.3 - Latest and best for RP!
-  'llama-3.3-70b': 'meta/llama-3.3-70b-instruct',
-  'llama-405b': 'meta/llama-3.1-405b-instruct',
-  'llama-70b': 'meta/llama-3.1-70b-instruct',
+  // 🧠 Smart & Reasoning (Moderate filters)
+  'deepseek-r1': 'deepseek-ai/deepseek-r1',              // Smart but has some filters
+  'deepseek-chat': 'deepseek-ai/deepseek-r1',
+  'deepseek': 'deepseek-ai/deepseek-r1',
   
-  // Mistral - Very creative
-  'mistral-large': 'mistralai/mistral-large-2-instruct',
-  'mistral-small': 'mistralai/mistral-7b-instruct',
-  
-  // Qwen - Excellent reasoning
-  'qwen-72b': 'qwen/qwen2.5-72b-instruct',
-  'qwen-32b': 'qwen/qwq-32b-preview',
-  
-  // NVIDIA Nemotron - Great for chat
+  // NVIDIA Models (Good balance)
   'nemotron-70b': 'nvidia/llama-3.1-nemotron-70b-instruct',
   'nemotron-51b': 'nvidia/llama-3.1-nemotron-51b-instruct',
   
-  // Google Gemma
+  // Qwen - Good reasoning
+  'qwen-72b': 'qwen/qwen2.5-72b-instruct',
+  'qwen-32b': 'qwen/qwq-32b-preview',
+  
+  // Google Gemma (More restricted)
   'gemma-27b': 'google/gemma-2-27b-it',
   'gemma-9b': 'google/gemma-2-9b-it',
   
-  // Alternative safe options
-  'claude': 'meta/llama-3.1-70b-instruct',  // Fallback
-  'default': 'meta/llama-3.1-8b-instruct'    // Safe default
+  // Fallbacks
+  'claude': 'meta/llama-3.1-70b-instruct',
+  'default': 'meta/llama-3.1-8b-instruct'
 };
 
 app.get('/health', (req, res) => {
@@ -81,7 +81,12 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       messages: messages,
       temperature: temperature || 0.7,
       max_tokens: max_tokens || 2048,  // Higher for longer RP responses
-      stream: stream || false
+      stream: stream || false,
+      // Enable reasoning/thinking for DeepSeek models
+      ...(nimModel.includes('deepseek') && { 
+        stop: null,  // Don't stop at </think>
+        include_reasoning: true  // Show thinking process
+      })
     };
     
     const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, {
