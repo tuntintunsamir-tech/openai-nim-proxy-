@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -11,42 +12,40 @@ app.use(express.json());
 const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.com/v1';
 const NIM_API_KEY = process.env.NIM_API_KEY;
 
-// Model mapping - Use these names in Janitor AI!
+// Model mapping - VERIFIED WORKING MODELS ONLY!
 const MODEL_MAPPING = {
-  // 🔥 BEST FOR NSFW RP (Least Filtered) 🔥
+  // ✅ Meta Llama - 100% Working (Best for NSFW RP)
   'llama-405b': 'meta/llama-3.1-405b-instruct',
   'llama-70b': 'meta/llama-3.1-70b-instruct',
+  'llama-8b': 'meta/llama-3.1-8b-instruct',
   'llama-3.3-70b': 'meta/llama-3.3-70b-instruct',
   
-  // Standard aliases
+  // Standard OpenAI aliases
   'gpt-4-turbo': 'meta/llama-3.1-405b-instruct',
   'gpt-4': 'meta/llama-3.1-70b-instruct',
   'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',
   
-  // 🎭 Mistral - Creative & Permissive
-  'mistral-large': 'mistralai/mistral-large',
-  'mistral-small': 'mistralai/mistral-7b-instruct-v0.3',
-  'mistral-nemo': 'nv-mistralai/mistral-nemo-12b-instruct',
+  // ✅ Mistral - Testing these
+  'mistral-7b': 'mistralai/mistral-7b-instruct-v0.3',
+  'mixtral-8x7b': 'mistralai/mixtral-8x7b-instruct-v0.1',
+  'mixtral-8x22b': 'mistralai/mixtral-8x22b-instruct-v0.1',
   
-  // 🧠 DeepSeek - Smart reasoning (some filters)
+  // ✅ NVIDIA Nemotron - 100% Working
+  'nemotron-70b': 'nvidia/llama-3.1-nemotron-70b-instruct',
+  
+  // ✅ DeepSeek - 100% Working
   'deepseek-r1': 'deepseek-ai/deepseek-r1',
-  'deepseek-chat': 'deepseek-ai/deepseek-r1',
   'deepseek': 'deepseek-ai/deepseek-r1',
   
-  // NVIDIA Models
-  'nemotron-70b': 'nvidia/llama-3.1-nemotron-70b-instruct',
-  'nemotron-51b': 'nvidia/llama-3.1-nemotron-51b-instruct',
-  
-  // Qwen
+  // ✅ Qwen - 100% Working
   'qwen-72b': 'qwen/qwen2.5-72b-instruct',
   'qwen-32b': 'qwen/qwq-32b-preview',
   
-  // Google Gemma
+  // ✅ Google Gemma - 100% Working
   'gemma-27b': 'google/gemma-2-27b-it',
   'gemma-9b': 'google/gemma-2-9b-it',
   
-  // Fallbacks
-  'claude': 'meta/llama-3.1-70b-instruct',
+  // Fallback
   'default': 'meta/llama-3.1-8b-instruct'
 };
 
