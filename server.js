@@ -12,36 +12,36 @@ const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.c
 const NIM_API_KEY = process.env.NIM_API_KEY;
 
 // Model mapping - Use these names in Janitor AI!
-// Updated October 2025 - Verified working models
 const MODEL_MAPPING = {
   // 🔥 BEST FOR NSFW RP (Least Filtered) 🔥
-  'llama-405b': 'meta/llama-3.1-405b-instruct',          // ⭐ Best quality + Very permissive
-  'llama-70b': 'meta/llama-3.1-70b-instruct',            // ⭐ Fast + Very permissive
-  'llama-3.3-70b': 'meta/llama-3.3-70b-instruct',        // ⭐ Latest + Very permissive
+  'llama-405b': 'meta/llama-3.1-405b-instruct',
+  'llama-70b': 'meta/llama-3.1-70b-instruct',
+  'llama-3.3-70b': 'meta/llama-3.3-70b-instruct',
   
   // Standard aliases
   'gpt-4-turbo': 'meta/llama-3.1-405b-instruct',
   'gpt-4': 'meta/llama-3.1-70b-instruct',
   'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',
   
-  // 🎭 Creative & Permissive
-  'mistral-large': 'mistralai/mistral-large-2-instruct', // Very creative, relaxed filters
-  'mistral-small': 'mistralai/mistral-7b-instruct',      // Fast, relaxed filters
+  // 🎭 Mistral - Creative & Permissive
+  'mistral-large': 'mistralai/mistral-large',
+  'mistral-small': 'mistralai/mistral-7b-instruct-v0.3',
+  'mistral-nemo': 'nv-mistralai/mistral-nemo-12b-instruct',
   
-  // 🧠 Smart & Reasoning (Moderate filters)
-  'deepseek-r1': 'deepseek-ai/deepseek-r1',              // Smart but has some filters
+  // 🧠 DeepSeek - Smart reasoning (some filters)
+  'deepseek-r1': 'deepseek-ai/deepseek-r1',
   'deepseek-chat': 'deepseek-ai/deepseek-r1',
   'deepseek': 'deepseek-ai/deepseek-r1',
   
-  // NVIDIA Models (Good balance)
+  // NVIDIA Models
   'nemotron-70b': 'nvidia/llama-3.1-nemotron-70b-instruct',
   'nemotron-51b': 'nvidia/llama-3.1-nemotron-51b-instruct',
   
-  // Qwen - Good reasoning
+  // Qwen
   'qwen-72b': 'qwen/qwen2.5-72b-instruct',
   'qwen-32b': 'qwen/qwq-32b-preview',
   
-  // Google Gemma (More restricted)
+  // Google Gemma
   'gemma-27b': 'google/gemma-2-27b-it',
   'gemma-9b': 'google/gemma-2-9b-it',
   
@@ -73,14 +73,14 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
   try {
     const { model, messages, temperature, max_tokens, stream } = req.body;
     
-    // Use the mapped model or default to fast model
     const nimModel = MODEL_MAPPING[model] || MODEL_MAPPING['gpt-3.5-turbo'];
     
+    // Simple request - no extra parameters
     const nimRequest = {
       model: nimModel,
       messages: messages,
       temperature: temperature || 0.7,
-      max_tokens: max_tokens || 2048,  // Higher for longer RP responses
+      max_tokens: max_tokens || 2048,
       stream: stream || false
     };
     
@@ -90,7 +90,7 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
         'Content-Type': 'application/json'
       },
       responseType: stream ? 'stream' : 'json',
-      timeout: 120000 // 2 minute timeout
+      timeout: 120000
     });
     
     if (stream) {
@@ -147,6 +147,6 @@ app.all('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Janitor AI Proxy running on port ${PORT}`);
-  console.log(`📍 Use this URL in Janitor AI: http://localhost:${PORT}/v1`);
-  console.log(`📍 Best models for RP: gpt-4-turbo, llama-405b, nemotron-70b`);
+  console.log(`📍 Best models for NSFW RP: llama-405b, llama-70b, mistral-large`);
+  console.log(`📍 DeepSeek reasoning: deepseek-r1 (shows <think> tags automatically)`);
 });
