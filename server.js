@@ -81,12 +81,7 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       messages: messages,
       temperature: temperature || 0.7,
       max_tokens: max_tokens || 2048,  // Higher for longer RP responses
-      stream: stream || false,
-      // Enable reasoning/thinking for DeepSeek models
-      ...(nimModel.includes('deepseek') && { 
-        stop: null,  // Don't stop at </think>
-        include_reasoning: true  // Show thinking process
-      })
+      stream: stream || false
     };
     
     const response = await axios.post(`${NIM_API_BASE}/chat/completions`, nimRequest, {
