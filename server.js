@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
@@ -25,6 +24,11 @@ const MODEL_MAPPING = {
   'gpt-4': 'meta/llama-3.1-70b-instruct',
   'gpt-3.5-turbo': 'meta/llama-3.1-8b-instruct',
   
+  // 🌙 Kimi K2 - NEW! 1 TRILLION PARAMETERS! 🔥
+  'kimi-k2': 'moonshotai/kimi-k2-instruct',           // Latest version
+  'kimi': 'moonshotai/kimi-k2-instruct',              // Alias
+  'moonshot': 'moonshotai/kimi-k2-instruct',          // Alias
+  
   // ✅ Mistral - Testing these
   'mistral-7b': 'mistralai/mistral-7b-instruct-v0.3',
   'mixtral-8x7b': 'mistralai/mixtral-8x7b-instruct-v0.1',
@@ -33,7 +37,7 @@ const MODEL_MAPPING = {
   // ✅ NVIDIA Nemotron - 100% Working
   'nemotron-70b': 'nvidia/llama-3.1-nemotron-70b-instruct',
   
-  // ✅ DeepSeek - 100% Working
+  // ✅ DeepSeek - 100% Working (Shows <think> reasoning)
   'deepseek-r1': 'deepseek-ai/deepseek-r1',
   'deepseek': 'deepseek-ai/deepseek-r1',
   
