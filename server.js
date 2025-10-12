@@ -14,29 +14,69 @@ const NIM_API_KEY = process.env.NIM_API_KEY;
 const GROQ_API_BASE = 'https://api.groq.com/openai/v1';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-// Model mapping with provider info
+// EXPANDED Model mapping with 40+ models!
 const MODEL_MAPPING = {
-  // 🌙 NVIDIA Models (High Quality, Slower)
-  'kimi-k2': { model: 'moonshot/kimi-k2-instruct', provider: 'nvidia' },
-  'kimi': { model: 'moonshot/kimi-k2-instruct', provider: 'nvidia' },
+  // 🌙 Kimi/Moonshot (Creative)
+  'kimi-k2': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
+  'kimi': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
+  'moonshot': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
   
+  // 🧠 DeepSeek (Reasoning)
   'deepseek-r1': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia' },
   'deepseek': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia' },
+  'deepseek-coder': { model: 'deepseek-ai/deepseek-coder-v2-lite-instruct', provider: 'nvidia' },
   
+  // 🦙 Llama 3.x Family (Latest)
   'llama-405b': { model: 'meta/llama-3.1-405b-instruct', provider: 'nvidia' },
+  'llama-70b': { model: 'meta/llama-3.1-70b-instruct', provider: 'nvidia' },
   'llama-8b': { model: 'meta/llama-3.1-8b-instruct', provider: 'nvidia' },
+  'llama-3.3-70b': { model: 'meta/llama-3.3-70b-instruct', provider: 'nvidia' },
+  'llama-3.2-3b': { model: 'meta/llama-3.2-3b-instruct', provider: 'nvidia' },
+  'llama-3.2-1b': { model: 'meta/llama-3.2-1b-instruct', provider: 'nvidia' },
+  'llama-3-70b': { model: 'meta/llama-3-70b-instruct', provider: 'nvidia' },
+  'llama-3-8b': { model: 'meta/llama-3-8b-instruct', provider: 'nvidia' },
   
+  // 🦙 Llama 2 Family (Stable)
+  'llama-2-70b': { model: 'meta/llama-2-70b-chat', provider: 'nvidia' },
+  'llama-2-13b': { model: 'meta/llama-2-13b-chat', provider: 'nvidia' },
+  'llama-2-7b': { model: 'meta/llama-2-7b-chat', provider: 'nvidia' },
+  
+  // 💻 Code Llama (For Coding)
+  'codellama-70b': { model: 'meta/codellama-70b-instruct', provider: 'nvidia' },
+  'codellama-34b': { model: 'meta/codellama-34b-instruct', provider: 'nvidia' },
+  'codellama-13b': { model: 'meta/codellama-13b-instruct', provider: 'nvidia' },
+  
+  // 🎨 Mixtral/Mistral Family
   'mixtral-8x22b': { model: 'mistralai/mixtral-8x22b-instruct-v0.1', provider: 'nvidia' },
   'mixtral-8x7b': { model: 'mistralai/mixtral-8x7b-instruct-v0.1', provider: 'nvidia' },
   'mistral-7b': { model: 'mistralai/mistral-7b-instruct-v0.3', provider: 'nvidia' },
+  'mistral-nemo-12b': { model: 'nv-mistralai/mistral-nemo-12b-instruct', provider: 'nvidia' },
+  'mistral-small': { model: 'mistralai/mistral-small-24b-instruct-2501', provider: 'nvidia' },
   
+  // 🤖 NVIDIA Nemotron Family
   'nemotron-70b': { model: 'nvidia/llama-3.1-nemotron-70b-instruct', provider: 'nvidia' },
+  'nemotron-ultra-253b': { model: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', provider: 'nvidia' },
+  'nemotron-super-49b': { model: 'nvidia/llama-3.3-nemotron-super-49b-v1', provider: 'nvidia' },
+  'nemotron-nano-8b': { model: 'nvidia/llama-3.1-nemotron-nano-8b-v1', provider: 'nvidia' },
+  'nemotron-nano-4b': { model: 'nvidia/llama-3.1-nemotron-nano-4b-v1.1', provider: 'nvidia' },
+  'nemotron-340b': { model: 'nvidia/nemotron-4-340b-instruct', provider: 'nvidia' },
   
+  // 🇨🇳 Qwen Family
   'qwen-72b': { model: 'qwen/qwen2.5-72b-instruct', provider: 'nvidia' },
   'qwen-32b': { model: 'qwen/qwq-32b-preview', provider: 'nvidia' },
+  'qwen-7b': { model: 'qwen/qwen2.5-7b-instruct', provider: 'nvidia' },
+  'qwen-coder-32b': { model: 'qwen/qwen2.5-coder-32b-instruct', provider: 'nvidia' },
   
+  // 🟢 Google Gemma
   'gemma-27b': { model: 'google/gemma-2-27b-it', provider: 'nvidia' },
   'gemma-9b': { model: 'google/gemma-2-9b-it', provider: 'nvidia' },
+  'gemma-2b': { model: 'google/gemma-2-2b-it', provider: 'nvidia' },
+  
+  // 🔵 Microsoft Phi
+  'phi-3-mini': { model: 'microsoft/phi-3-mini-4k-instruct', provider: 'nvidia' },
+  
+  // 🏢 IBM Granite
+  'granite-8b': { model: 'ibm/granite-3.3-8b-instruct', provider: 'nvidia' },
   
   // ⚡ GROQ Models (ULTRA FAST!)
   'groq-llama-70b': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
@@ -46,8 +86,6 @@ const MODEL_MAPPING = {
   
   // Fast aliases
   'llama-70b-fast': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
-  'llama-70b': { model: 'meta/llama-3.1-70b-instruct', provider: 'nvidia' },
-  'llama-3.3-70b': { model: 'meta/llama-3.3-70b-instruct', provider: 'nvidia' },
   
   // Standard OpenAI aliases (using fast Groq models)
   'gpt-4-turbo': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
@@ -64,7 +102,8 @@ app.get('/health', (req, res) => {
     providers: {
       nvidia: NIM_API_KEY ? 'configured' : 'missing',
       groq: GROQ_API_KEY ? 'configured' : 'missing'
-    }
+    },
+    total_models: Object.keys(MODEL_MAPPING).length
   });
 });
 
@@ -120,7 +159,7 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       stream: stream || false
     };
     
-    console.log(`[${provider.toUpperCase()}] Processing request for model: ${actualModel}`);
+    console.log(`[${provider.toUpperCase()}] ${model} → ${actualModel}`);
     
     const response = await axios.post(`${apiBase}/chat/completions`, requestBody, {
       headers: {
@@ -128,7 +167,7 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
         'Content-Type': 'application/json'
       },
       responseType: stream ? 'stream' : 'json',
-      timeout: provider === 'groq' ? 60000 : 180000 // Groq is faster, shorter timeout
+      timeout: provider === 'groq' ? 60000 : 180000
     });
     
     if (stream) {
@@ -184,8 +223,8 @@ app.all('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Multi-Provider Proxy running on port ${PORT}`);
-  console.log(`⚡ GROQ Models (ULTRA FAST): groq-llama-70b, groq-mixtral`);
-  console.log(`🌙 NVIDIA Models (HIGH QUALITY): kimi-k2, deepseek-r1, llama-405b`);
-  console.log(`💡 TIP: Use Groq models for speed, NVIDIA for quality!`);
+  console.log(`🚀 Multi-Provider Proxy with ${Object.keys(MODEL_MAPPING).length} models!`);
+  console.log(`⚡ GROQ (Fast): groq-llama-70b, groq-mixtral`);
+  console.log(`🌙 NVIDIA (Quality): kimi-k2, deepseek-r1, llama-405b`);
+  console.log(`🆕 NEW: Nemotron, Phi-3, Granite, Qwen expanded!`);
 });
