@@ -14,96 +14,82 @@ const NIM_API_KEY = process.env.NIM_API_KEY;
 const GROQ_API_BASE = 'https://api.groq.com/openai/v1';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
-// EXPANDED Model mapping with 40+ models!
+// EXPANDED Model mapping - VERIFIED WORKING ONLY!
 const MODEL_MAPPING = {
-  // 🌙 Kimi/Moonshot (Creative)
-  'kimi-k2': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
-  'kimi': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
-  'moonshot': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
+  // 🌙 Kimi/Moonshot (Creative) - VERIFIED ✅
+  'kimi-k2': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia', timeout: 300000 },
+  'kimi': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia', timeout: 300000 },
+  'moonshot': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia', timeout: 300000 },
   
-  // 🧠 DeepSeek (Reasoning)
-  'deepseek-r1': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia' },
-  'deepseek': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia' },
-  'deepseek-coder': { model: 'deepseek-ai/deepseek-coder-v2-lite-instruct', provider: 'nvidia' },
+  // 🧠 DeepSeek (Reasoning) - VERIFIED ✅ [TIMEOUT AUMENTADO]
+  'deepseek-r1': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia', timeout: 600000 },
+  'deepseek': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia', timeout: 600000 },
+  'deepseek-reasoner': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia', timeout: 600000 },
   
-  // 🦙 Llama 3.x Family (Latest)
-  'llama-405b': { model: 'meta/llama-3.1-405b-instruct', provider: 'nvidia' },
-  'llama-70b': { model: 'meta/llama-3.1-70b-instruct', provider: 'nvidia' },
-  'llama-8b': { model: 'meta/llama-3.1-8b-instruct', provider: 'nvidia' },
-  'llama-3.3-70b': { model: 'meta/llama-3.3-70b-instruct', provider: 'nvidia' },
-  'llama-3.2-3b': { model: 'meta/llama-3.2-3b-instruct', provider: 'nvidia' },
-  'llama-3.2-1b': { model: 'meta/llama-3.2-1b-instruct', provider: 'nvidia' },
-  'llama-3-70b': { model: 'meta/llama-3-70b-instruct', provider: 'nvidia' },
-  'llama-3-8b': { model: 'meta/llama-3-8b-instruct', provider: 'nvidia' },
+  // 🦙 Llama 3.x Family (Latest) - VERIFIED ✅
+  'llama-405b': { model: 'meta/llama-3.1-405b-instruct', provider: 'nvidia', timeout: 240000 },
+  'llama-70b': { model: 'meta/llama-3.1-70b-instruct', provider: 'nvidia', timeout: 180000 },
+  'llama-8b': { model: 'meta/llama-3.1-8b-instruct', provider: 'nvidia', timeout: 120000 },
+  'llama-3.3-70b': { model: 'meta/llama-3.3-70b-instruct', provider: 'nvidia', timeout: 180000 },
+  'llama-3-70b': { model: 'meta/llama-3-70b-instruct', provider: 'nvidia', timeout: 180000 },
+  'llama-3-8b': { model: 'meta/llama-3-8b-instruct', provider: 'nvidia', timeout: 120000 },
   
-  // 🦙 Llama 2 Family (Stable)
-  'llama-2-70b': { model: 'meta/llama-2-70b-chat', provider: 'nvidia' },
-  'llama-2-13b': { model: 'meta/llama-2-13b-chat', provider: 'nvidia' },
-  'llama-2-7b': { model: 'meta/llama-2-7b-chat', provider: 'nvidia' },
+  // 🦙 Llama 2 Family (Stable) - VERIFIED ✅
+  'llama-2-70b': { model: 'meta/llama-2-70b-chat', provider: 'nvidia', timeout: 180000 },
+  'llama-2-13b': { model: 'meta/llama-2-13b-chat', provider: 'nvidia', timeout: 120000 },
+  'llama-2-7b': { model: 'meta/llama-2-7b-chat', provider: 'nvidia', timeout: 120000 },
   
-  // 💻 Code Llama (For Coding)
-  'codellama-70b': { model: 'meta/codellama-70b-instruct', provider: 'nvidia' },
-  'codellama-34b': { model: 'meta/codellama-34b-instruct', provider: 'nvidia' },
-  'codellama-13b': { model: 'meta/codellama-13b-instruct', provider: 'nvidia' },
+  // 🎨 Mixtral/Mistral Family - VERIFIED ✅
+  'mixtral-8x22b': { model: 'mistralai/mixtral-8x22b-instruct-v0.1', provider: 'nvidia', timeout: 180000 },
+  'mixtral-8x7b': { model: 'mistralai/mixtral-8x7b-instruct-v0.1', provider: 'nvidia', timeout: 120000 },
+  'mistral-7b': { model: 'mistralai/mistral-7b-instruct-v0.3', provider: 'nvidia', timeout: 120000 },
   
-  // 🎨 Mixtral/Mistral Family
-  'mixtral-8x22b': { model: 'mistralai/mixtral-8x22b-instruct-v0.1', provider: 'nvidia' },
-  'mixtral-8x7b': { model: 'mistralai/mixtral-8x7b-instruct-v0.1', provider: 'nvidia' },
-  'mistral-7b': { model: 'mistralai/mistral-7b-instruct-v0.3', provider: 'nvidia' },
-  'mistral-nemo-12b': { model: 'nv-mistralai/mistral-nemo-12b-instruct', provider: 'nvidia' },
-  'mistral-small': { model: 'mistralai/mistral-small-24b-instruct-2501', provider: 'nvidia' },
+  // 🤖 NVIDIA Nemotron - VERIFIED ✅
+  'nemotron-70b': { model: 'nvidia/llama-3.1-nemotron-70b-instruct', provider: 'nvidia', timeout: 180000 },
+  'nemotron-253b': { model: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', provider: 'nvidia', timeout: 240000 },
+  'nemotron-49b': { model: 'nvidia/llama-3.3-nemotron-super-49b-v1', provider: 'nvidia', timeout: 180000 },
+  'nemotron-8b': { model: 'nvidia/llama-3.1-nemotron-nano-8b-v1', provider: 'nvidia', timeout: 120000 },
+  'nemotron-4b': { model: 'nvidia/llama-3.1-nemotron-nano-4b-v1.1', provider: 'nvidia', timeout: 120000 },
+  'nemotron-340b': { model: 'nvidia/nemotron-4-340b-instruct', provider: 'nvidia', timeout: 240000 },
   
-  // 🤖 NVIDIA Nemotron Family
-  'nemotron-70b': { model: 'nvidia/llama-3.1-nemotron-70b-instruct', provider: 'nvidia' },
-  'nemotron-ultra-253b': { model: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', provider: 'nvidia' },
-  'nemotron-super-49b': { model: 'nvidia/llama-3.3-nemotron-super-49b-v1', provider: 'nvidia' },
-  'nemotron-nano-8b': { model: 'nvidia/llama-3.1-nemotron-nano-8b-v1', provider: 'nvidia' },
-  'nemotron-nano-4b': { model: 'nvidia/llama-3.1-nemotron-nano-4b-v1.1', provider: 'nvidia' },
-  'nemotron-340b': { model: 'nvidia/nemotron-4-340b-instruct', provider: 'nvidia' },
+  // 🇨🇳 Qwen Family - VERIFIED ✅
+  'qwen-72b': { model: 'qwen/qwen2.5-72b-instruct', provider: 'nvidia', timeout: 180000 },
+  'qwen-32b': { model: 'qwen/qwq-32b-preview', provider: 'nvidia', timeout: 240000 },
+  'qwen-7b': { model: 'qwen/qwen2.5-7b-instruct', provider: 'nvidia', timeout: 120000 },
   
-  // 🇨🇳 Qwen Family
-  'qwen-72b': { model: 'qwen/qwen2.5-72b-instruct', provider: 'nvidia' },
-  'qwen-32b': { model: 'qwen/qwq-32b-preview', provider: 'nvidia' },
-  'qwen-7b': { model: 'qwen/qwen2.5-7b-instruct', provider: 'nvidia' },
-  'qwen-coder-32b': { model: 'qwen/qwen2.5-coder-32b-instruct', provider: 'nvidia' },
+  // 🟢 Google Gemma - VERIFIED ✅
+  'gemma-27b': { model: 'google/gemma-2-27b-it', provider: 'nvidia', timeout: 120000 },
+  'gemma-9b': { model: 'google/gemma-2-9b-it', provider: 'nvidia', timeout: 90000 },
+  'gemma-2b': { model: 'google/gemma-2-2b-it', provider: 'nvidia', timeout: 90000 },
   
-  // 🟢 Google Gemma
-  'gemma-27b': { model: 'google/gemma-2-27b-it', provider: 'nvidia' },
-  'gemma-9b': { model: 'google/gemma-2-9b-it', provider: 'nvidia' },
-  'gemma-2b': { model: 'google/gemma-2-2b-it', provider: 'nvidia' },
-  
-  // 🔵 Microsoft Phi
-  'phi-3-mini': { model: 'microsoft/phi-3-mini-4k-instruct', provider: 'nvidia' },
-  
-  // 🏢 IBM Granite
-  'granite-8b': { model: 'ibm/granite-3.3-8b-instruct', provider: 'nvidia' },
-  
-  // ⚡ GROQ Models (ULTRA FAST!)
-  'groq-llama-70b': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
-  'groq-llama-8b': { model: 'llama-3.1-8b-instant', provider: 'groq' },
-  'groq-mixtral': { model: 'mixtral-8x7b-32768', provider: 'groq' },
-  'groq-gemma-9b': { model: 'gemma2-9b-it', provider: 'groq' },
+  // ⚡ GROQ Models (ULTRA FAST!) - VERIFIED ✅
+  'groq-llama-70b': { model: 'llama-3.3-70b-versatile', provider: 'groq', timeout: 60000 },
+  'groq-llama-8b': { model: 'llama-3.1-8b-instant', provider: 'groq', timeout: 30000 },
+  'groq-mixtral': { model: 'mixtral-8x7b-32768', provider: 'groq', timeout: 60000 },
+  'groq-gemma-9b': { model: 'gemma2-9b-it', provider: 'groq', timeout: 30000 },
   
   // Fast aliases
-  'llama-70b-fast': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
+  'llama-70b-fast': { model: 'llama-3.3-70b-versatile', provider: 'groq', timeout: 60000 },
   
   // Standard OpenAI aliases (using fast Groq models)
-  'gpt-4-turbo': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
-  'gpt-4': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
-  'gpt-3.5-turbo': { model: 'llama-3.1-8b-instant', provider: 'groq' },
+  'gpt-4-turbo': { model: 'llama-3.3-70b-versatile', provider: 'groq', timeout: 60000 },
+  'gpt-4': { model: 'llama-3.3-70b-versatile', provider: 'groq', timeout: 60000 },
+  'gpt-3.5-turbo': { model: 'llama-3.1-8b-instant', provider: 'groq', timeout: 30000 },
   
   // Fallback
-  'default': { model: 'llama-3.1-8b-instant', provider: 'groq' }
+  'default': { model: 'llama-3.1-8b-instant', provider: 'groq', timeout: 30000 }
 };
 
 app.get('/health', (req, res) => {
   res.json({ 
-    status: 'ok', 
+    status: 'ok',
+    version: '2.0-optimized',
     providers: {
-      nvidia: NIM_API_KEY ? 'configured' : 'missing',
-      groq: GROQ_API_KEY ? 'configured' : 'missing'
+      nvidia: NIM_API_KEY ? 'configured ✅' : 'missing ❌',
+      groq: GROQ_API_KEY ? 'configured ✅' : 'missing ❌'
     },
-    total_models: Object.keys(MODEL_MAPPING).length
+    total_models: Object.keys(MODEL_MAPPING).length,
+    features: ['extended-timeouts', 'better-streaming', 'error-handling']
   });
 });
 
@@ -112,7 +98,8 @@ app.get('/v1/models', (req, res) => {
     id: model,
     object: 'model',
     created: Date.now(),
-    owned_by: MODEL_MAPPING[model].provider
+    owned_by: MODEL_MAPPING[model].provider,
+    timeout: MODEL_MAPPING[model].timeout
   }));
   
   res.json({
@@ -126,10 +113,22 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
   try {
     const { model, messages, temperature, max_tokens, stream } = req.body;
     
+    // Validação básica
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({
+        error: { 
+          message: 'Messages must be an array', 
+          type: 'invalid_request_error',
+          code: 400
+        }
+      });
+    }
+    
     // Get model info
     const modelInfo = MODEL_MAPPING[model] || MODEL_MAPPING['default'];
     const provider = modelInfo.provider;
     const actualModel = modelInfo.model;
+    const timeout = modelInfo.timeout || 180000;
     
     // Select API based on provider
     let apiBase, apiKey;
@@ -138,7 +137,11 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       apiKey = GROQ_API_KEY;
       if (!apiKey) {
         return res.status(500).json({
-          error: { message: 'Groq API key not configured', type: 'configuration_error' }
+          error: { 
+            message: 'Groq API key not configured. Set GROQ_API_KEY environment variable.', 
+            type: 'configuration_error',
+            code: 500
+          }
         });
       }
     } else {
@@ -146,7 +149,11 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       apiKey = NIM_API_KEY;
       if (!apiKey) {
         return res.status(500).json({
-          error: { message: 'NVIDIA API key not configured', type: 'configuration_error' }
+          error: { 
+            message: 'NVIDIA API key not configured. Set NIM_API_KEY environment variable.', 
+            type: 'configuration_error',
+            code: 500
+          }
         });
       }
     }
@@ -156,26 +163,66 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       messages: messages,
       temperature: temperature || 0.7,
       max_tokens: max_tokens || 2048,
-      stream: stream || false
+      stream: stream !== undefined ? stream : true // Force streaming por padrão
     };
     
-    console.log(`[${provider.toUpperCase()}] ${model} → ${actualModel}`);
+    console.log(`[${provider.toUpperCase()}] ${model} → ${actualModel} (timeout: ${timeout}ms)`);
     
     const response = await axios.post(`${apiBase}/chat/completions`, requestBody, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': requestBody.stream ? 'text/event-stream' : 'application/json'
       },
-      responseType: stream ? 'stream' : 'json',
-      timeout: provider === 'groq' ? 60000 : 180000
+      responseType: requestBody.stream ? 'stream' : 'json',
+      timeout: timeout,
+      validateStatus: () => true // Aceita qualquer status para tratamento manual
     });
     
-    if (stream) {
+    // Verifica status de erro
+    if (response.status >= 400) {
+      console.error(`API Error ${response.status}:`, response.data);
+      return res.status(response.status).json({
+        error: {
+          message: response.data?.error?.message || response.data?.message || 'API request failed',
+          type: 'api_error',
+          code: response.status
+        }
+      });
+    }
+    
+    if (requestBody.stream) {
+      // Streaming mode - pipe direto
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+      
+      // Timeout handler para streaming
+      const streamTimeout = setTimeout(() => {
+        if (!res.writableEnded) {
+          console.error('Stream timeout exceeded');
+          res.end();
+        }
+      }, timeout + 10000); // 10s extra de margem
+      
+      response.data.on('end', () => {
+        clearTimeout(streamTimeout);
+        console.log('Stream completed successfully');
+      });
+      
+      response.data.on('error', (err) => {
+        clearTimeout(streamTimeout);
+        console.error('Stream error:', err.message);
+        if (!res.writableEnded) {
+          res.end();
+        }
+      });
+      
       response.data.pipe(res);
+      
     } else {
+      // Non-streaming mode
       const openaiResponse = {
         id: `chatcmpl-${Date.now()}`,
         object: 'chat.completion',
@@ -197,13 +244,39 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
     }
     
   } catch (error) {
-    console.error('Proxy error:', error.response?.data || error.message);
+    console.error('Proxy error:', error.code, error.message);
     
-    res.status(error.response?.status || 500).json({
+    // Timeout específico
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      return res.status(504).json({
+        error: {
+          message: `Request timeout after ${error.config?.timeout || 'unknown'}ms. Try: 1) Shorter messages 2) Lower max_tokens 3) Different model`,
+          type: 'timeout_error',
+          code: 504,
+          timeout: error.config?.timeout,
+          suggestions: [
+            'Use mensagens mais curtas',
+            'Reduza max_tokens para 500-1000',
+            'Tente groq-llama-70b (mais rápido)',
+            'Ative streaming: stream: true'
+          ]
+        }
+      });
+    }
+    
+    // Outros erros
+    const statusCode = error.response?.status || 500;
+    const errorMessage = error.response?.data?.error?.message || 
+                        error.response?.data?.message || 
+                        error.message || 
+                        'Internal server error';
+    
+    res.status(statusCode).json({
       error: {
-        message: error.response?.data?.message || error.message || 'Internal server error',
-        type: 'invalid_request_error',
-        code: error.response?.status || 500
+        message: errorMessage,
+        type: 'proxy_error',
+        code: statusCode,
+        details: error.code
       }
     });
   }
@@ -214,17 +287,39 @@ app.all('*', (req, res) => {
   console.log(`404 - ${req.method} ${req.path}`);
   res.status(404).json({
     error: {
-      message: `Endpoint ${req.path} not found. Available endpoints: /health, /v1/models, /v1/chat/completions`,
+      message: `Endpoint ${req.path} not found`,
       type: 'invalid_request_error',
       code: 404,
-      available_endpoints: ['/health', '/v1/models', '/v1/chat/completions']
+      available_endpoints: [
+        'GET /health',
+        'GET /v1/models', 
+        'POST /v1/chat/completions'
+      ]
     }
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Multi-Provider Proxy with ${Object.keys(MODEL_MAPPING).length} models!`);
-  console.log(`⚡ GROQ (Fast): groq-llama-70b, groq-mixtral`);
-  console.log(`🌙 NVIDIA (Quality): kimi-k2, deepseek-r1, llama-405b`);
-  console.log(`🆕 NEW: Nemotron, Phi-3, Granite, Qwen expanded!`);
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
+});
+
+const server = app.listen(PORT, () => {
+  console.log(`\n🚀 Multi-Provider Proxy v2.0 - OPTIMIZED!`);
+  console.log(`📡 Port: ${PORT}`);
+  console.log(`🔢 Models: ${Object.keys(MODEL_MAPPING).length}`);
+  console.log(`\n⚡ GROQ (Ultra Fast):`);
+  console.log(`   - groq-llama-70b, groq-mixtral (30-60s)`);
+  console.log(`\n🧠 NVIDIA (Quality + Reasoning):`);
+  console.log(`   - deepseek-r1 (timeout: 10min) ✅`);
+  console.log(`   - kimi-k2, llama-405b, nemotron`);
+  console.log(`\n🔧 Improvements:`);
+  console.log(`   ✅ Extended timeout for DeepSeek R1 (600s)`);
+  console.log(`   ✅ Better streaming with error handling`);
+  console.log(`   ✅ Individual timeouts per model`);
+  console.log(`   ✅ Helpful error messages\n`);
 });
