@@ -13,7 +13,7 @@ const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.c
 const NIM_API_KEY = process.env.NIM_API_KEY;
 const GROQ_API_BASE = 'https://api.groq.com/openai/v1';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const HF_API_BASE = 'https://api-inference.huggingface.co/models';
+const HF_API_BASE = 'https://router.huggingface.co/v1';
 const HF_API_KEY = process.env.HF_API_KEY;
 
 // EXPANDED Model mapping
@@ -30,7 +30,6 @@ const MODEL_MAPPING = {
   // 🤖 GLM (via Hugging Face) - FREE! ✅
   'glm-4': { model: 'THUDM/glm-4-9b-chat', provider: 'huggingface' },
   'glm-4-9b': { model: 'THUDM/glm-4-9b-chat', provider: 'huggingface' },
-  'glm-4-9b-chat': { model: 'THUDM/glm-4-9b-chat-hf', provider: 'huggingface' },
   'chatglm': { model: 'THUDM/glm-4-9b-chat', provider: 'huggingface' },
   
   // 🦙 Llama 3.x Family (Latest) - VERIFIED ✅
@@ -127,28 +126,20 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
     const customTimeout = modelInfo.timeout;
     
     // Select API based on provider
-    let apiBase, apiKey, timeout, headers;
+    let apiBase, apiKey, timeout;
     if (provider === 'groq') {
       apiBase = GROQ_API_BASE;
       apiKey = GROQ_API_KEY;
       timeout = customTimeout || 60000;
-      headers = {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      };
       if (!apiKey) {
         return res.status(500).json({
           error: { message: 'Groq API key not configured', type: 'configuration_error' }
         });
       }
     } else if (provider === 'huggingface') {
-      apiBase = `${HF_API_BASE}/${actualModel}`;
+      apiBase = HF_API_BASE;
       apiKey = HF_API_KEY;
       timeout = customTimeout || 180000;
-      headers = {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      };
       if (!apiKey) {
         return res.status(500).json({
           error: { message: 'Hugging Face API key not configured. Get one at https://huggingface.co/settings/tokens', type: 'configuration_error' }
@@ -158,10 +149,6 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       apiBase = NIM_API_BASE;
       apiKey = NIM_API_KEY;
       timeout = customTimeout || 180000;
-      headers = {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      };
       if (!apiKey) {
         return res.status(500).json({
           error: { message: 'NVIDIA API key not configured', type: 'configuration_error' }
@@ -169,87 +156,47 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       }
     }
     
-    // Handle Hugging Face format differently
-    let requestBody, endpoint;
-    if (provider === 'huggingface') {
-      // Hugging Face uses different format
-      const lastMessage = messages[messages.length - 1];
-      requestBody = {
-        inputs: lastMessage.content,
-        parameters: {
-          temperature: temperature || 0.7,
-          max_new_tokens: max_tokens || 2048,
-          return_full_text: false
-        }
-      };
-      endpoint = apiBase;
-    } else {
-      requestBody = {
-        model: actualModel,
-        messages: messages,
-        temperature: temperature || 0.7,
-        max_tokens: max_tokens || 2048,
-        stream: stream || false
-      };
-      endpoint = `${apiBase}/chat/completions`;
-    }
+    const requestBody = {
+      model: actualModel,
+      messages: messages,
+      temperature: temperature || 0.7,
+      max_tokens: max_tokens || 2048,
+      stream: stream || false
+    };
     
     console.log(`[${provider.toUpperCase()}] ${model} → ${actualModel}`);
     
-    const response = await axios.post(endpoint, requestBody, {
-      headers: headers,
-      responseType: stream && provider !== 'huggingface' ? 'stream' : 'json',
+    const response = await axios.post(`${apiBase}/chat/completions`, requestBody, {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      responseType: stream ? 'stream' : 'json',
       timeout: timeout
     });
     
-    if (stream && provider !== 'huggingface') {
+    if (stream) {
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
       response.data.pipe(res);
     } else {
-      let openaiResponse;
-      
-      if (provider === 'huggingface') {
-        // Convert Hugging Face response to OpenAI format
-        const hfResponse = response.data[0];
-        openaiResponse = {
-          id: `chatcmpl-${Date.now()}`,
-          object: 'chat.completion',
-          created: Math.floor(Date.now() / 1000),
-          model: model,
-          choices: [{
-            index: 0,
-            message: {
-              role: 'assistant',
-              content: hfResponse.generated_text || hfResponse.text || ''
-            },
-            finish_reason: 'stop'
-          }],
-          usage: {
-            prompt_tokens: 0,
-            completion_tokens: 0,
-            total_tokens: 0
-          }
-        };
-      } else {
-        openaiResponse = {
-          id: `chatcmpl-${Date.now()}`,
-          object: 'chat.completion',
-          created: Math.floor(Date.now() / 1000),
-          model: model,
-          choices: response.data.choices.map(choice => ({
-            index: choice.index,
-            message: choice.message,
-            finish_reason: choice.finish_reason
-          })),
-          usage: response.data.usage || {
-            prompt_tokens: 0,
-            completion_tokens: 0,
-            total_tokens: 0
-          }
-        };
-      }
+      const openaiResponse = {
+        id: `chatcmpl-${Date.now()}`,
+        object: 'chat.completion',
+        created: Math.floor(Date.now() / 1000),
+        model: model,
+        choices: response.data.choices.map(choice => ({
+          index: choice.index,
+          message: choice.message,
+          finish_reason: choice.finish_reason
+        })),
+        usage: response.data.usage || {
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0
+        }
+      };
       
       res.json(openaiResponse);
     }
@@ -282,9 +229,4 @@ app.all('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Multi-Provider Proxy with ${Object.keys(MODEL_MAPPING).length} models!`);
-  console.log(`⚡ GROQ (Fast): groq-llama-70b, groq-mixtral`);
-  console.log(`🌙 NVIDIA (Quality): kimi-k2, deepseek-r1, llama-405b`);
-  console.log(`🤖 GLM (FREE Hugging Face): glm-4, glm-4-9b-chat`);
-  console.log(`🔥 BIG NEMOTRON: nemotron-253b, nemotron-340b`);
-  console.log(`📝 Get free HF token at: https://huggingface.co/settings/tokens`);
-});
+  console.log(`⚡
