@@ -114,18 +114,15 @@ app.get('/v1/models', (req, res) => {
   });
 });
 
-// Handle both /chat/completions and /v1/chat/completions
 app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
   try {
     const { model, messages, temperature, max_tokens, stream } = req.body;
     
-    // Get model info
     const modelInfo = MODEL_MAPPING[model] || MODEL_MAPPING['default'];
     const provider = modelInfo.provider;
     const actualModel = modelInfo.model;
     const customTimeout = modelInfo.timeout;
     
-    // Select API based on provider
     let apiBase, apiKey, timeout;
     if (provider === 'groq') {
       apiBase = GROQ_API_BASE;
@@ -142,7 +139,7 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       timeout = customTimeout || 180000;
       if (!apiKey) {
         return res.status(500).json({
-          error: { message: 'Hugging Face API key not configured. Get one at https://huggingface.co/settings/tokens', type: 'configuration_error' }
+          error: { message: 'Hugging Face API key not configured', type: 'configuration_error' }
         });
       }
     } else {
@@ -214,19 +211,21 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
   }
 });
 
-// 404 handler
 app.all('*', (req, res) => {
   console.log(`404 - ${req.method} ${req.path}`);
   res.status(404).json({
     error: {
-      message: `Endpoint ${req.path} not found. Available endpoints: /health, /v1/models, /v1/chat/completions`,
+      message: `Endpoint ${req.path} not found`,
       type: 'invalid_request_error',
-      code: 404,
-      available_endpoints: ['/health', '/v1/models', '/v1/chat/completions']
+      code: 404
     }
   });
 });
 
 app.listen(PORT, () => {
   console.log(`🚀 Multi-Provider Proxy with ${Object.keys(MODEL_MAPPING).length} models!`);
-  console.log(`⚡
+  console.log(`⚡ GROQ (Fast): groq-llama-70b, groq-mixtral`);
+  console.log(`🌙 NVIDIA (Quality): kimi-k2, deepseek-r1, llama-405b`);
+  console.log(`🤖 GLM (Hugging Face): glm-4, glm-4-9b`);
+  console.log(`🔥 BIG NEMOTRON: nemotron-253b, nemotron-340b`);
+});
