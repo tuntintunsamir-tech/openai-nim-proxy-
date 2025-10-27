@@ -13,10 +13,10 @@ const NIM_API_BASE = process.env.NIM_API_BASE || 'https://integrate.api.nvidia.c
 const NIM_API_KEY = process.env.NIM_API_KEY;
 const GROQ_API_BASE = 'https://api.groq.com/openai/v1';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
-const HF_API_BASE = 'https://router.huggingface.co/v1';
-const HF_API_KEY = process.env.HF_API_KEY;
+const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-// EXPANDED Model mapping
+// EXPANDED Model mapping with NEW NVIDIA models!
 const MODEL_MAPPING = {
   // 🌙 Kimi/Moonshot (Creative) - VERIFIED ✅
   'kimi-k2': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
@@ -27,10 +27,11 @@ const MODEL_MAPPING = {
   'deepseek-r1': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia' },
   'deepseek': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia' },
   
-  // 🤖 GLM (via Hugging Face) - FREE! ✅
-  'glm-4': { model: 'THUDM/glm-4-9b-chat', provider: 'huggingface' },
-  'glm-4-9b': { model: 'THUDM/glm-4-9b-chat', provider: 'huggingface' },
-  'chatglm': { model: 'THUDM/glm-4-9b-chat', provider: 'huggingface' },
+  // 🤖 GLM (via OpenRouter) - FREE! ✅
+  'glm-4': { model: 'thudm/glm-4-32b:free', provider: 'openrouter' },
+  'glm-4-32b': { model: 'thudm/glm-4-32b:free', provider: 'openrouter' },
+  'glm-z1-9b': { model: 'thudm/glm-z1-9b:free', provider: 'openrouter' },
+  'chatglm': { model: 'thudm/glm-4-32b:free', provider: 'openrouter' },
   
   // 🦙 Llama 3.x Family (Latest) - VERIFIED ✅
   'llama-405b': { model: 'meta/llama-3.1-405b-instruct', provider: 'nvidia', timeout: 300000 },
@@ -50,10 +51,8 @@ const MODEL_MAPPING = {
   'mixtral-8x7b': { model: 'mistralai/mixtral-8x7b-instruct-v0.1', provider: 'nvidia' },
   'mistral-7b': { model: 'mistralai/mistral-7b-instruct-v0.3', provider: 'nvidia' },
   
-  // 🤖 NVIDIA Nemotron - VERIFIED ✅
+  // 🤖 NVIDIA Nemotron Family - VERIFIED ✅
   'nemotron-70b': { model: 'nvidia/llama-3.1-nemotron-70b-instruct', provider: 'nvidia' },
-  
-  // 🤖 NVIDIA Nemotron Extended - BIG MODELS
   'nemotron-253b': { model: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', provider: 'nvidia', timeout: 600000 },
   'nemotron-49b': { model: 'nvidia/llama-3.3-nemotron-super-49b-v1', provider: 'nvidia', timeout: 300000 },
   'nemotron-340b': { model: 'nvidia/nemotron-4-340b-instruct', provider: 'nvidia', timeout: 600000 },
@@ -65,10 +64,24 @@ const MODEL_MAPPING = {
   'qwen-32b': { model: 'qwen/qwq-32b-preview', provider: 'nvidia' },
   'qwen-7b': { model: 'qwen/qwen2.5-7b-instruct', provider: 'nvidia' },
   
-  // 🟢 Google Gemma - VERIFIED ✅
+  // 🟢 Google Gemma Family - VERIFIED ✅
   'gemma-27b': { model: 'google/gemma-2-27b-it', provider: 'nvidia' },
   'gemma-9b': { model: 'google/gemma-2-9b-it', provider: 'nvidia' },
   'gemma-2b': { model: 'google/gemma-2-2b-it', provider: 'nvidia' },
+  
+  // 🔵 Microsoft Phi Family - NEW! ✅
+  'phi-3-medium': { model: 'microsoft/phi-3-medium-128k-instruct', provider: 'nvidia' },
+  'phi-3-small': { model: 'microsoft/phi-3-small-128k-instruct', provider: 'nvidia' },
+  'phi-3-mini': { model: 'microsoft/phi-3-mini-128k-instruct', provider: 'nvidia' },
+  
+  // 🏢 IBM Granite - NEW! ✅
+  'granite-34b': { model: 'ibm/granite-34b-code-instruct', provider: 'nvidia' },
+  'granite-8b': { model: 'ibm/granite-8b-code-instruct', provider: 'nvidia' },
+  'granite-3b': { model: 'ibm/granite-3b-code-instruct', provider: 'nvidia' },
+  
+  // 🌐 Yi Models - NEW! ✅
+  'yi-large': { model: '01-ai/yi-large', provider: 'nvidia' },
+  'yi-34b': { model: '01-ai/yi-34b-chat', provider: 'nvidia' },
   
   // ⚡ GROQ Models (ULTRA FAST!) - VERIFIED ✅
   'groq-llama-70b': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
@@ -94,7 +107,7 @@ app.get('/health', (req, res) => {
     providers: {
       nvidia: NIM_API_KEY ? 'configured' : 'missing',
       groq: GROQ_API_KEY ? 'configured' : 'missing',
-      huggingface: HF_API_KEY ? 'configured' : 'missing'
+      openrouter: OPENROUTER_API_KEY ? 'configured' : 'missing'
     },
     total_models: Object.keys(MODEL_MAPPING).length
   });
@@ -116,7 +129,7 @@ app.get('/v1/models', (req, res) => {
 
 app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
   try {
-    const { model, messages, temperature, max_tokens, stream } = req.body;
+    const { model, messages, temperature, max_tokens, stream, frequency_penalty, presence_penalty } = req.body;
     
     const modelInfo = MODEL_MAPPING[model] || MODEL_MAPPING['default'];
     const provider = modelInfo.provider;
@@ -133,13 +146,13 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
           error: { message: 'Groq API key not configured', type: 'configuration_error' }
         });
       }
-    } else if (provider === 'huggingface') {
-      apiBase = HF_API_BASE;
-      apiKey = HF_API_KEY;
+    } else if (provider === 'openrouter') {
+      apiBase = OPENROUTER_API_BASE;
+      apiKey = OPENROUTER_API_KEY;
       timeout = customTimeout || 180000;
       if (!apiKey) {
         return res.status(500).json({
-          error: { message: 'Hugging Face API key not configured', type: 'configuration_error' }
+          error: { message: 'OpenRouter API key not configured. Sign up at https://openrouter.ai', type: 'configuration_error' }
         });
       }
     } else {
@@ -153,11 +166,14 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       }
     }
     
+    // ANTI-REPETITION SETTINGS!
     const requestBody = {
       model: actualModel,
       messages: messages,
-      temperature: temperature || 0.7,
-      max_tokens: max_tokens || 2048,
+      temperature: temperature || 0.9,  // Higher temp = more creative, less repetitive
+      max_tokens: max_tokens || 100000,    // Shorter responses = less talking for you
+      frequency_penalty: frequency_penalty || 0.7,  // Penalize repeating phrases
+      presence_penalty: presence_penalty || 0.6,   // Encourage new topics
       stream: stream || false
     };
     
@@ -226,6 +242,7 @@ app.listen(PORT, () => {
   console.log(`🚀 Multi-Provider Proxy with ${Object.keys(MODEL_MAPPING).length} models!`);
   console.log(`⚡ GROQ (Fast): groq-llama-70b, groq-mixtral`);
   console.log(`🌙 NVIDIA (Quality): kimi-k2, deepseek-r1, llama-405b`);
-  console.log(`🤖 GLM (Hugging Face): glm-4, glm-4-9b`);
+  console.log(`🤖 GLM (FREE): glm-4, glm-4-32b, glm-z1-9b`);
+  console.log(`🆕 NEW MODELS: phi-3-medium, granite-34b, yi-large`);
   console.log(`🔥 BIG NEMOTRON: nemotron-253b, nemotron-340b`);
 });
