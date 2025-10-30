@@ -171,7 +171,6 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       model: actualModel,
       messages: messages,
       temperature: temperature || 0.9,  // Higher temp = more creative, less repetitive
-      max_tokens: max_tokens || 100000,    // Shorter responses = less talking for you
       frequency_penalty: frequency_penalty || 0.7,  // Penalize repeating phrases
       presence_penalty: presence_penalty || 0.6,   // Encourage new topics
       stream: stream || false
