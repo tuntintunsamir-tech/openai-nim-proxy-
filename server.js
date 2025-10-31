@@ -170,9 +170,9 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
     const requestBody = {
       model: actualModel,
       messages: messages,
-      temperature: temperature || 0.9,  // Higher temp = more creative, less repetitive
+      temperature: temperature || 0.7,  // Higher temp = more creative, less repetitive
       frequency_penalty: frequency_penalty || 0.7,  // Penalize repeating phrases
-      presence_penalty: presence_penalty || 0.6,   // Encourage new topics
+      presence_penalty: presence_penalty || 0.4,   // Encourage new topics
       stream: stream || false
     };
     
