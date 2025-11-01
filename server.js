@@ -17,7 +17,7 @@ const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 // OPENROUTER DAILY LIMIT PROTECTION!
-const OPENROUTER_DAILY_LIMIT = parseFloat(process.env.OPENROUTER_DAILY_LIMIT || '2.0'); // $2 per day default
+const OPENROUTER_DAILY_LIMIT = parseFloat(process.env.OPENROUTER_DAILY_LIMIT || '2.0');
 let openrouterDailySpend = 0;
 let lastResetDate = new Date().toDateString();
 
@@ -31,7 +31,7 @@ function checkAndResetDailyLimit() {
   }
 }
 
-// EXPANDED Model mapping with NEW NVIDIA models!
+// EXPANDED Model mapping with reasoning models marked
 const MODEL_MAPPING = {
   // 🌙 Kimi/Moonshot (Creative) - VERIFIED ✅
   'kimi-k2': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
@@ -39,13 +39,13 @@ const MODEL_MAPPING = {
   'moonshot': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
   
   // 🧠 DeepSeek (Reasoning) - VERIFIED ✅
-  'deepseek-r1': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia' },
-  'deepseek': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia' },
+  'deepseek-r1': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia', reasoning: true },
+  'deepseek': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia', reasoning: true },
   
   // 🤖 GLM (via OpenRouter) - FREE! ✅
   'glm-4': { model: 'thudm/glm-4-32b:free', provider: 'openrouter' },
   'glm-4-32b': { model: 'thudm/glm-4-32b:free', provider: 'openrouter' },
-  'glm-z1-9b': { model: 'thudm/glm-z1-9b:free', provider: 'openrouter' },
+  'glm-z1-9b': { model: 'thudm/glm-z1-9b:free', provider: 'openrouter', reasoning: true },
   'chatglm': { model: 'thudm/glm-4-32b:free', provider: 'openrouter' },
   
   // 🦙 Llama 3.x Family (Latest) - VERIFIED ✅
@@ -76,7 +76,7 @@ const MODEL_MAPPING = {
   
   // 🇨🇳 Qwen Family - VERIFIED ✅
   'qwen-72b': { model: 'qwen/qwen2.5-72b-instruct', provider: 'nvidia' },
-  'qwen-32b': { model: 'qwen/qwq-32b-preview', provider: 'nvidia' },
+  'qwen-32b': { model: 'qwen/qwq-32b-preview', provider: 'nvidia', reasoning: true },
   'qwen-7b': { model: 'qwen/qwen2.5-7b-instruct', provider: 'nvidia' },
   
   // 🟢 Google Gemma Family - VERIFIED ✅
@@ -156,6 +156,7 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
     const provider = modelInfo.provider;
     const actualModel = modelInfo.model;
     const customTimeout = modelInfo.timeout;
+    const isReasoningModel = modelInfo.reasoning || false;
     
     // CHECK OPENROUTER DAILY LIMIT!
     if (provider === 'openrouter' && openrouterDailySpend >= OPENROUTER_DAILY_LIMIT) {
@@ -209,7 +210,7 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       stream: stream || false
     };
     
-    console.log(`[${provider.toUpperCase()}] ${model} → ${actualModel}`);
+    console.log(`[${provider.toUpperCase()}] ${model} → ${actualModel}${isReasoningModel ? ' (REASONING)' : ''}`);
     
     const response = await axios.post(`${apiBase}/chat/completions`, requestBody, {
       headers: {
@@ -225,7 +226,6 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       const promptTokens = response.data.usage.prompt_tokens || 0;
       const completionTokens = response.data.usage.completion_tokens || 0;
       
-      // Rough estimate: $0.50 per 1M tokens for free models
       const estimatedCost = ((promptTokens + completionTokens) / 1000000) * 0.50;
       openrouterDailySpend += estimatedCost;
       
@@ -238,12 +238,60 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       res.setHeader('Connection', 'keep-alive');
       response.data.pipe(res);
     } else {
+      // FORMAT REASONING MODEL RESPONSES!
+      let formattedChoices = response.data.choices;
+      
+      if (isReasoningModel) {
+        formattedChoices = response.data.choices.map(choice => {
+          const originalContent = choice.message.content;
+          
+          // Check if there's a thinking section (between <think> tags or similar)
+          const thinkMatch = originalContent.match(/<think>([\s\S]*?)<\/think>/i);
+          
+          if (thinkMatch) {
+            const thinkingContent = thinkMatch[1].trim();
+            const answerContent = originalContent.replace(/<think>[\s\S]*?<\/think>/i, '').trim();
+            
+            // Format with visible thinking process
+            const formattedContent = `**🧠 Thinking Process:**\n\`\`\`\n${thinkingContent}\n\`\`\`\n\n**💡 Answer:**\n${answerContent}`;
+            
+            return {
+              ...choice,
+              message: {
+                ...choice.message,
+                content: formattedContent
+              }
+            };
+          }
+          
+          // If no explicit thinking tags, try to detect reasoning pattern
+          const lines = originalContent.split('\n');
+          if (lines.length > 5 && originalContent.includes('reasoning') || originalContent.includes('step')) {
+            const midPoint = Math.floor(lines.length / 2);
+            const thinkingPart = lines.slice(0, midPoint).join('\n');
+            const answerPart = lines.slice(midPoint).join('\n');
+            
+            const formattedContent = `**🧠 Thinking:**\n\`\`\`\n${thinkingPart}\n\`\`\`\n\n**💡 Answer:**\n${answerPart}`;
+            
+            return {
+              ...choice,
+              message: {
+                ...choice.message,
+                content: formattedContent
+              }
+            };
+          }
+          
+          return choice;
+        });
+      }
+      
       const openaiResponse = {
         id: `chatcmpl-${Date.now()}`,
         object: 'chat.completion',
         created: Math.floor(Date.now() / 1000),
         model: model,
-        choices: response.data.choices.map(choice => ({
+        choices: formattedChoices.map(choice => ({
           index: choice.index,
           message: choice.message,
           finish_reason: choice.finish_reason
@@ -288,15 +336,7 @@ app.listen(PORT, () => {
   console.log(`⚡ GROQ (Fast): groq-llama-70b, groq-mixtral`);
   console.log(`🌙 NVIDIA (Quality): kimi-k2, deepseek-r1, llama-405b`);
   console.log(`🤖 GLM (FREE): glm-4, glm-4-32b, glm-z1-9b`);
+  console.log(`🧠 REASONING: deepseek-r1, qwen-32b, glm-z1-9b`);
   console.log(`🆕 NEW MODELS: phi-3-medium, granite-34b, yi-large`);
   console.log(`🔥 BIG NEMOTRON: nemotron-253b, nemotron-340b`);
 });
-```
-
-## What to do now:
-
-### Step 1: Add to Render Environment Variables
-In Render, add these two variables:
-```
-OPENROUTER_API_KEY=your-openrouter-key-here
-OPENROUTER_DAILY_LIMIT=2.0
