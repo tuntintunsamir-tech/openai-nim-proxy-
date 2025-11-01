@@ -16,6 +16,21 @@ const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+// OPENROUTER DAILY LIMIT PROTECTION!
+const OPENROUTER_DAILY_LIMIT = parseFloat(process.env.OPENROUTER_DAILY_LIMIT || '2.0'); // $2 per day default
+let openrouterDailySpend = 0;
+let lastResetDate = new Date().toDateString();
+
+// Reset counter at midnight
+function checkAndResetDailyLimit() {
+  const today = new Date().toDateString();
+  if (today !== lastResetDate) {
+    openrouterDailySpend = 0;
+    lastResetDate = today;
+    console.log('✅ OpenRouter daily limit reset!');
+  }
+}
+
 // EXPANDED Model mapping with NEW NVIDIA models!
 const MODEL_MAPPING = {
   // 🌙 Kimi/Moonshot (Creative) - VERIFIED ✅
@@ -102,6 +117,7 @@ const MODEL_MAPPING = {
 };
 
 app.get('/health', (req, res) => {
+  checkAndResetDailyLimit();
   res.json({ 
     status: 'ok', 
     providers: {
@@ -109,6 +125,9 @@ app.get('/health', (req, res) => {
       groq: GROQ_API_KEY ? 'configured' : 'missing',
       openrouter: OPENROUTER_API_KEY ? 'configured' : 'missing'
     },
+    openrouter_daily_spend: `$${openrouterDailySpend.toFixed(4)}`,
+    openrouter_daily_limit: `$${OPENROUTER_DAILY_LIMIT}`,
+    openrouter_remaining: `$${(OPENROUTER_DAILY_LIMIT - openrouterDailySpend).toFixed(4)}`,
     total_models: Object.keys(MODEL_MAPPING).length
   });
 });
@@ -129,12 +148,25 @@ app.get('/v1/models', (req, res) => {
 
 app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
   try {
+    checkAndResetDailyLimit();
+    
     const { model, messages, temperature, max_tokens, stream, frequency_penalty, presence_penalty } = req.body;
     
     const modelInfo = MODEL_MAPPING[model] || MODEL_MAPPING['default'];
     const provider = modelInfo.provider;
     const actualModel = modelInfo.model;
     const customTimeout = modelInfo.timeout;
+    
+    // CHECK OPENROUTER DAILY LIMIT!
+    if (provider === 'openrouter' && openrouterDailySpend >= OPENROUTER_DAILY_LIMIT) {
+      return res.status(429).json({
+        error: { 
+          message: `OpenRouter daily limit reached ($${OPENROUTER_DAILY_LIMIT}). Resets at midnight. Current spend: $${openrouterDailySpend.toFixed(4)}`,
+          type: 'rate_limit_error',
+          code: 'daily_limit_exceeded'
+        }
+      });
+    }
     
     let apiBase, apiKey, timeout;
     if (provider === 'groq') {
@@ -170,9 +202,10 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
     const requestBody = {
       model: actualModel,
       messages: messages,
-      temperature: temperature || 0.7,  // Higher temp = more creative, less repetitive
-      frequency_penalty: frequency_penalty || 0.7,  // Penalize repeating phrases
-      presence_penalty: presence_penalty || 0.4,   // Encourage new topics
+      temperature: temperature || 0.7,
+      max_tokens: max_tokens || 10000,
+      frequency_penalty: frequency_penalty || 0.7,
+      presence_penalty: presence_penalty || 0.4,
       stream: stream || false
     };
     
@@ -186,6 +219,18 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       responseType: stream ? 'stream' : 'json',
       timeout: timeout
     });
+    
+    // TRACK OPENROUTER SPENDING!
+    if (provider === 'openrouter' && response.data.usage) {
+      const promptTokens = response.data.usage.prompt_tokens || 0;
+      const completionTokens = response.data.usage.completion_tokens || 0;
+      
+      // Rough estimate: $0.50 per 1M tokens for free models
+      const estimatedCost = ((promptTokens + completionTokens) / 1000000) * 0.50;
+      openrouterDailySpend += estimatedCost;
+      
+      console.log(`💰 OpenRouter spend: +$${estimatedCost.toFixed(6)} (Total today: $${openrouterDailySpend.toFixed(4)})`);
+    }
     
     if (stream) {
       res.setHeader('Content-Type', 'text/event-stream');
@@ -239,9 +284,19 @@ app.all('*', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`🚀 Multi-Provider Proxy with ${Object.keys(MODEL_MAPPING).length} models!`);
+  console.log(`💰 OpenRouter daily limit: $${OPENROUTER_DAILY_LIMIT}`);
   console.log(`⚡ GROQ (Fast): groq-llama-70b, groq-mixtral`);
   console.log(`🌙 NVIDIA (Quality): kimi-k2, deepseek-r1, llama-405b`);
   console.log(`🤖 GLM (FREE): glm-4, glm-4-32b, glm-z1-9b`);
   console.log(`🆕 NEW MODELS: phi-3-medium, granite-34b, yi-large`);
   console.log(`🔥 BIG NEMOTRON: nemotron-253b, nemotron-340b`);
 });
+```
+
+## What to do now:
+
+### Step 1: Add to Render Environment Variables
+In Render, add these two variables:
+```
+OPENROUTER_API_KEY=your-openrouter-key-here
+OPENROUTER_DAILY_LIMIT=2.0
