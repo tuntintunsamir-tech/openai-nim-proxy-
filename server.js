@@ -21,7 +21,6 @@ const OPENROUTER_DAILY_LIMIT = parseFloat(process.env.OPENROUTER_DAILY_LIMIT || 
 let openrouterDailySpend = 0;
 let lastResetDate = new Date().toDateString();
 
-// Reset counter at midnight
 function checkAndResetDailyLimit() {
   const today = new Date().toDateString();
   if (today !== lastResetDate) {
@@ -31,88 +30,73 @@ function checkAndResetDailyLimit() {
   }
 }
 
-// EXPANDED Model mapping with reasoning models marked
 const MODEL_MAPPING = {
-  // 🌙 Kimi/Moonshot (Creative) - VERIFIED ✅
+  // 🌙 Kimi/Moonshot (Creative)
   'kimi-k2': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
   'kimi': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
-  'moonshot': { model: 'moonshotai/kimi-k2-instruct', provider: 'nvidia' },
   
-  // 🧠 DeepSeek (Reasoning) - VERIFIED ✅
+  // 🧠 DeepSeek (Reasoning) - BOTH PROVIDERS!
   'deepseek-r1': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia', reasoning: true },
   'deepseek': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia', reasoning: true },
+  'deepseek-r1-openrouter': { model: 'deepseek/deepseek-r1', provider: 'openrouter', reasoning: true },
   
-  // 🤖 GLM (via OpenRouter) - FREE! ✅
+  // 🤖 GLM (OpenRouter - FREE!)
   'glm-4': { model: 'thudm/glm-4-32b:free', provider: 'openrouter' },
   'glm-4-32b': { model: 'thudm/glm-4-32b:free', provider: 'openrouter' },
   'glm-z1-9b': { model: 'thudm/glm-z1-9b:free', provider: 'openrouter', reasoning: true },
   'chatglm': { model: 'thudm/glm-4-32b:free', provider: 'openrouter' },
   
-  // 🦙 Llama 3.x Family (Latest) - VERIFIED ✅
+  // 🦙 Llama Family
   'llama-405b': { model: 'meta/llama-3.1-405b-instruct', provider: 'nvidia', timeout: 300000 },
   'llama-70b': { model: 'meta/llama-3.1-70b-instruct', provider: 'nvidia' },
   'llama-8b': { model: 'meta/llama-3.1-8b-instruct', provider: 'nvidia' },
   'llama-3.3-70b': { model: 'meta/llama-3.3-70b-instruct', provider: 'nvidia' },
   'llama-3-70b': { model: 'meta/llama-3-70b-instruct', provider: 'nvidia' },
   'llama-3-8b': { model: 'meta/llama-3-8b-instruct', provider: 'nvidia' },
-  
-  // 🦙 Llama 2 Family (Stable) - VERIFIED ✅
   'llama-2-70b': { model: 'meta/llama-2-70b-chat', provider: 'nvidia' },
   'llama-2-13b': { model: 'meta/llama-2-13b-chat', provider: 'nvidia' },
   'llama-2-7b': { model: 'meta/llama-2-7b-chat', provider: 'nvidia' },
   
-  // 🎨 Mixtral/Mistral Family - VERIFIED ✅
+  // 🎨 Mixtral/Mistral
   'mixtral-8x22b': { model: 'mistralai/mixtral-8x22b-instruct-v0.1', provider: 'nvidia' },
   'mixtral-8x7b': { model: 'mistralai/mixtral-8x7b-instruct-v0.1', provider: 'nvidia' },
   'mistral-7b': { model: 'mistralai/mistral-7b-instruct-v0.3', provider: 'nvidia' },
   
-  // 🤖 NVIDIA Nemotron Family - VERIFIED ✅
+  // 🤖 Nemotron
   'nemotron-70b': { model: 'nvidia/llama-3.1-nemotron-70b-instruct', provider: 'nvidia' },
   'nemotron-253b': { model: 'nvidia/llama-3.1-nemotron-ultra-253b-v1', provider: 'nvidia', timeout: 600000 },
-  'nemotron-49b': { model: 'nvidia/llama-3.3-nemotron-super-49b-v1', provider: 'nvidia', timeout: 300000 },
   'nemotron-340b': { model: 'nvidia/nemotron-4-340b-instruct', provider: 'nvidia', timeout: 600000 },
-  'nemotron-8b': { model: 'nvidia/llama-3.1-nemotron-nano-8b-v1', provider: 'nvidia' },
-  'nemotron-4b': { model: 'nvidia/llama-3.1-nemotron-nano-4b-v1.1', provider: 'nvidia' },
   
-  // 🇨🇳 Qwen Family - VERIFIED ✅
+  // 🇨🇳 Qwen
   'qwen-72b': { model: 'qwen/qwen2.5-72b-instruct', provider: 'nvidia' },
   'qwen-32b': { model: 'qwen/qwq-32b-preview', provider: 'nvidia', reasoning: true },
   'qwen-7b': { model: 'qwen/qwen2.5-7b-instruct', provider: 'nvidia' },
   
-  // 🟢 Google Gemma Family - VERIFIED ✅
+  // 🟢 Gemma
   'gemma-27b': { model: 'google/gemma-2-27b-it', provider: 'nvidia' },
   'gemma-9b': { model: 'google/gemma-2-9b-it', provider: 'nvidia' },
-  'gemma-2b': { model: 'google/gemma-2-2b-it', provider: 'nvidia' },
   
-  // 🔵 Microsoft Phi Family - NEW! ✅
+  // 🔵 Phi
   'phi-3-medium': { model: 'microsoft/phi-3-medium-128k-instruct', provider: 'nvidia' },
-  'phi-3-small': { model: 'microsoft/phi-3-small-128k-instruct', provider: 'nvidia' },
   'phi-3-mini': { model: 'microsoft/phi-3-mini-128k-instruct', provider: 'nvidia' },
   
-  // 🏢 IBM Granite - NEW! ✅
+  // 🏢 Granite
   'granite-34b': { model: 'ibm/granite-34b-code-instruct', provider: 'nvidia' },
   'granite-8b': { model: 'ibm/granite-8b-code-instruct', provider: 'nvidia' },
-  'granite-3b': { model: 'ibm/granite-3b-code-instruct', provider: 'nvidia' },
   
-  // 🌐 Yi Models - NEW! ✅
+  // 🌐 Yi
   'yi-large': { model: '01-ai/yi-large', provider: 'nvidia' },
   'yi-34b': { model: '01-ai/yi-34b-chat', provider: 'nvidia' },
   
-  // ⚡ GROQ Models (ULTRA FAST!) - VERIFIED ✅
+  // ⚡ GROQ
   'groq-llama-70b': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
   'groq-llama-8b': { model: 'llama-3.1-8b-instant', provider: 'groq' },
   'groq-mixtral': { model: 'mixtral-8x7b-32768', provider: 'groq' },
-  'groq-gemma-9b': { model: 'gemma2-9b-it', provider: 'groq' },
   
-  // Fast aliases
-  'llama-70b-fast': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
-  
-  // Standard OpenAI aliases
+  // Aliases
   'gpt-4-turbo': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
   'gpt-4': { model: 'llama-3.3-70b-versatile', provider: 'groq' },
   'gpt-3.5-turbo': { model: 'llama-3.1-8b-instant', provider: 'groq' },
-  
-  // Fallback
   'default': { model: 'llama-3.1-8b-instant', provider: 'groq' }
 };
 
@@ -127,7 +111,6 @@ app.get('/health', (req, res) => {
     },
     openrouter_daily_spend: `$${openrouterDailySpend.toFixed(4)}`,
     openrouter_daily_limit: `$${OPENROUTER_DAILY_LIMIT}`,
-    openrouter_remaining: `$${(OPENROUTER_DAILY_LIMIT - openrouterDailySpend).toFixed(4)}`,
     total_models: Object.keys(MODEL_MAPPING).length
   });
 });
@@ -139,11 +122,7 @@ app.get('/v1/models', (req, res) => {
     created: Date.now(),
     owned_by: MODEL_MAPPING[model].provider
   }));
-  
-  res.json({
-    object: 'list',
-    data: models
-  });
+  res.json({ object: 'list', data: models });
 });
 
 app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
@@ -158,13 +137,11 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
     const customTimeout = modelInfo.timeout;
     const isReasoningModel = modelInfo.reasoning || false;
     
-    // CHECK OPENROUTER DAILY LIMIT!
     if (provider === 'openrouter' && openrouterDailySpend >= OPENROUTER_DAILY_LIMIT) {
       return res.status(429).json({
         error: { 
-          message: `OpenRouter daily limit reached ($${OPENROUTER_DAILY_LIMIT}). Resets at midnight. Current spend: $${openrouterDailySpend.toFixed(4)}`,
-          type: 'rate_limit_error',
-          code: 'daily_limit_exceeded'
+          message: `OpenRouter daily limit reached ($${OPENROUTER_DAILY_LIMIT})`,
+          type: 'rate_limit_error'
         }
       });
     }
@@ -173,33 +150,23 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
     if (provider === 'groq') {
       apiBase = GROQ_API_BASE;
       apiKey = GROQ_API_KEY;
-      timeout = customTimeout || 60000;
-      if (!apiKey) {
-        return res.status(500).json({
-          error: { message: 'Groq API key not configured', type: 'configuration_error' }
-        });
-      }
+      timeout = 60000;
     } else if (provider === 'openrouter') {
       apiBase = OPENROUTER_API_BASE;
       apiKey = OPENROUTER_API_KEY;
-      timeout = customTimeout || 180000;
-      if (!apiKey) {
-        return res.status(500).json({
-          error: { message: 'OpenRouter API key not configured. Sign up at https://openrouter.ai', type: 'configuration_error' }
-        });
-      }
+      timeout = 180000;
     } else {
       apiBase = NIM_API_BASE;
       apiKey = NIM_API_KEY;
       timeout = customTimeout || 180000;
-      if (!apiKey) {
-        return res.status(500).json({
-          error: { message: 'NVIDIA API key not configured', type: 'configuration_error' }
-        });
-      }
     }
     
-    // ANTI-REPETITION SETTINGS!
+    if (!apiKey) {
+      return res.status(500).json({
+        error: { message: `${provider} API key not configured`, type: 'configuration_error' }
+      });
+    }
+    
     const requestBody = {
       model: actualModel,
       messages: messages,
@@ -210,7 +177,7 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       stream: stream || false
     };
     
-    console.log(`[${provider.toUpperCase()}] ${model} → ${actualModel}${isReasoningModel ? ' (REASONING)' : ''}`);
+    console.log(`[${provider.toUpperCase()}] ${model} → ${actualModel}${isReasoningModel ? ' 🧠' : ''}`);
     
     const response = await axios.post(`${apiBase}/chat/completions`, requestBody, {
       headers: {
@@ -221,15 +188,11 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       timeout: timeout
     });
     
-    // TRACK OPENROUTER SPENDING!
     if (provider === 'openrouter' && response.data.usage) {
-      const promptTokens = response.data.usage.prompt_tokens || 0;
-      const completionTokens = response.data.usage.completion_tokens || 0;
-      
-      const estimatedCost = ((promptTokens + completionTokens) / 1000000) * 0.50;
-      openrouterDailySpend += estimatedCost;
-      
-      console.log(`💰 OpenRouter spend: +$${estimatedCost.toFixed(6)} (Total today: $${openrouterDailySpend.toFixed(4)})`);
+      const tokens = (response.data.usage.prompt_tokens || 0) + (response.data.usage.completion_tokens || 0);
+      const cost = (tokens / 1000000) * 0.50;
+      openrouterDailySpend += cost;
+      console.log(`💰 +$${cost.toFixed(6)} (Total: $${openrouterDailySpend.toFixed(4)})`);
     }
     
     if (stream) {
@@ -238,105 +201,33 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
       res.setHeader('Connection', 'keep-alive');
       response.data.pipe(res);
     } else {
-      // FORMAT REASONING MODEL RESPONSES!
-      let formattedChoices = response.data.choices;
-      
-      if (isReasoningModel) {
-        formattedChoices = response.data.choices.map(choice => {
-          const originalContent = choice.message.content;
-          
-          // Check if there's a thinking section (between <think> tags or similar)
-          const thinkMatch = originalContent.match(/<think>([\s\S]*?)<\/think>/i);
-          
-          if (thinkMatch) {
-            const thinkingContent = thinkMatch[1].trim();
-            const answerContent = originalContent.replace(/<think>[\s\S]*?<\/think>/i, '').trim();
-            
-            // Format with visible thinking process
-            const formattedContent = `**🧠 Thinking Process:**\n\`\`\`\n${thinkingContent}\n\`\`\`\n\n**💡 Answer:**\n${answerContent}`;
-            
-            return {
-              ...choice,
-              message: {
-                ...choice.message,
-                content: formattedContent
-              }
-            };
-          }
-          
-          // If no explicit thinking tags, try to detect reasoning pattern
-          const lines = originalContent.split('\n');
-          if (lines.length > 5 && originalContent.includes('reasoning') || originalContent.includes('step')) {
-            const midPoint = Math.floor(lines.length / 2);
-            const thinkingPart = lines.slice(0, midPoint).join('\n');
-            const answerPart = lines.slice(midPoint).join('\n');
-            
-            const formattedContent = `**🧠 Thinking:**\n\`\`\`\n${thinkingPart}\n\`\`\`\n\n**💡 Answer:**\n${answerPart}`;
-            
-            return {
-              ...choice,
-              message: {
-                ...choice.message,
-                content: formattedContent
-              }
-            };
-          }
-          
-          return choice;
-        });
-      }
-      
-      const openaiResponse = {
+      res.json({
         id: `chatcmpl-${Date.now()}`,
         object: 'chat.completion',
         created: Math.floor(Date.now() / 1000),
         model: model,
-        choices: formattedChoices.map(choice => ({
-          index: choice.index,
-          message: choice.message,
-          finish_reason: choice.finish_reason
-        })),
-        usage: response.data.usage || {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0
-        }
-      };
-      
-      res.json(openaiResponse);
+        choices: response.data.choices,
+        usage: response.data.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 }
+      });
     }
     
   } catch (error) {
     console.error('Proxy error:', error.response?.data || error.message);
-    
     res.status(error.response?.status || 500).json({
       error: {
         message: error.response?.data?.message || error.message || 'Internal server error',
-        type: 'invalid_request_error',
-        code: error.response?.status || 500
+        type: 'invalid_request_error'
       }
     });
   }
 });
 
 app.all('*', (req, res) => {
-  console.log(`404 - ${req.method} ${req.path}`);
-  res.status(404).json({
-    error: {
-      message: `Endpoint ${req.path} not found`,
-      type: 'invalid_request_error',
-      code: 404
-    }
-  });
+  res.status(404).json({ error: { message: `Endpoint ${req.path} not found`, type: 'invalid_request_error' } });
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Multi-Provider Proxy with ${Object.keys(MODEL_MAPPING).length} models!`);
-  console.log(`💰 OpenRouter daily limit: $${OPENROUTER_DAILY_LIMIT}`);
-  console.log(`⚡ GROQ (Fast): groq-llama-70b, groq-mixtral`);
-  console.log(`🌙 NVIDIA (Quality): kimi-k2, deepseek-r1, llama-405b`);
-  console.log(`🤖 GLM (FREE): glm-4, glm-4-32b, glm-z1-9b`);
-  console.log(`🧠 REASONING: deepseek-r1, qwen-32b, glm-z1-9b`);
-  console.log(`🆕 NEW MODELS: phi-3-medium, granite-34b, yi-large`);
-  console.log(`🔥 BIG NEMOTRON: nemotron-253b, nemotron-340b`);
+  console.log(`🚀 Proxy with ${Object.keys(MODEL_MAPPING).length} models!`);
+  console.log(`💰 OpenRouter limit: $${OPENROUTER_DAILY_LIMIT}/day`);
+  console.log(`🧠 TRY REASONING: deepseek-r1-openrouter (shows thinking better!)`);
 });
