@@ -38,6 +38,7 @@ const MODEL_MAPPING = {
   // 🧠 DeepSeek (Reasoning) - BOTH PROVIDERS!
   'deepseek-r1': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia', reasoning: true },
   'deepseek': { model: 'deepseek-ai/deepseek-r1', provider: 'nvidia', reasoning: true },
+  'deepseek-r1-0528': { model: 'deepseek-ai/deepseek-r1-0528', provider: 'nvidia', reasoning: true },
   'deepseek-r1-openrouter': { model: 'deepseek/deepseek-r1', provider: 'openrouter', reasoning: true },
   
   // 🤖 GLM (OpenRouter - FREE!)
