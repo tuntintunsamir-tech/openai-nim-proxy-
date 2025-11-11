@@ -170,9 +170,9 @@ app.post(['/chat/completions', '/v1/chat/completions'], async (req, res) => {
     const requestBody = {
       model: actualModel,
       messages: messages,
-      temperature: temperature || 0.5,
+      temperature: temperature || 0.7,
       max_tokens: max_tokens || 100000,
-      frequency_penalty: frequency_penalty || 0.4,
+      frequency_penalty: frequency_penalty || 0.5,
       stream: stream || false
     };
     
